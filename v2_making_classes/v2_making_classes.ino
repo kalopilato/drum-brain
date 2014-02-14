@@ -1,5 +1,9 @@
 
 #include <LiquidCrystal.h>
+#include "DrumPad.h"
+#include "KeyMap.h"
+
+
 
 /* LCD Configuration */
 LiquidCrystal lcd(7, 8, 9, 10, 11, 12);
@@ -7,8 +11,9 @@ LiquidCrystal lcd(7, 8, 9, 10, 11, 12);
 /* Drum Pad Input Pins */
 int PIN_COUNT = 6; // Defines number of pins in use
 
-/* Name of the system */
-String SYS_NAME = "Drum Brain v1.0";
+/* Name and version of the system */
+String SYS_NAME = "MIDI Drum Brain";
+String SYS_VERSION = "v1.0";
 
 /* Tunable Values */
 byte ANALOG_SAMPLES = 8;        // Defines how many consecutive reads to take from one strike
@@ -22,47 +27,40 @@ byte PEDAL_VELOCITY = 20;       // Defines velocity of pedal changes
 int noteON = 144;               // 10010000 in binary, note on command
 int noteOFF = 128;              // 10000000 in binary, note off command
 
-/* MIDI Keymap Arrays (Addictive Drums Mappings */
-int kickNote[] = {36};
-String kickName[] = {"Kick"};
-byte kickSize = 1;
-
-int snareNote[] = {37, 38, 39, 40, 41, 42, 43, 44};
-String snareName[] = {"Sn Rim", "Sn Open Hit", "Sn Rim (dbl)", "Sn Open Hit (dbl)", "Sn Shallow Rim", "Sn SideStick", "Sn Shallow Hit", "Sn Rim Click"};
-byte snareSize = 8;
-
-int tomNote[] = {72, 71, 70, 69, 68, 67, 66, 65};
-String tomName[] = {"Tom 1 Rim", "Tom 1 Open", "Tom 2 Rim", "Tom 2 Open", "Tom 3 Rim", "Tom 3 Open", "Tom 4 Rim", "Tom 4 Open"}; 
-byte tomSize = 8;
-
-int hatNote[] = {49, 50, 51, 52, 53, 54, 55, 56, 57, 58};
-String hatName[] = {"HH 1 Close Tip", "HH 1 Close Shaft", "HH 2 Close Tip", "HH 2 Close Shaft", "HH Close Bell", "HH Open A", "HH Open B", "HH Open C", "HH Open D", "HH Open Bell"};
-byte hatSize = 10;
-
-int cymbalNote[] = {77, 46, 79, 81, 60, 61, 62, 47};
-String cymbalName[] = {"Cymbal 1", "Cymbal 1 (dbl)", "Cymbal 2", "Cymbal 3", "Ride Tip", "Ride Bell", "Ride Shaft", "Xtra"};
-byte cymbalSize = 8;
-
-/* Initial Drum Pad to MIDI note mappings (uses array position in MIDI Keymap Arrays */
-byte kickPos = 0;
-byte redPos = 1;
-byte bluePos = 1;
-byte greenPos = 3;
-byte yellowPos = 0;
-byte orangePos = 0;
-
-/* Edit Menu Arrays */
-String padNames[] = {"Kick Pedal", "Red Pad", "Blue Pad", "Green Pad", "Yellow Pad", "Orange Pad"};
-String* nameArray[] = {kickName, snareName, tomName, tomName, hatName, cymbalName};
-int* noteArray[] = {kickNote, snareNote, tomNote, tomNote, hatNote, cymbalNote};
-byte noteArraySize[] = {kickSize, snareSize, tomSize, tomSize, hatSize, cymbalSize};
-byte noteArrayPos[] = {kickPos, redPos, bluePos, greenPos, yellowPos, orangePos};
-
 /* MIDI Note Values */
 int PEDAL_OFF = 59;
 int PEDAL_ON = 48;
-int HAT_OPEN = 54;
-int HAT_CLOSED = 49;
+
+/* Create KeyMaps (Addictive Drums)*/
+String kickNames[] = {"Kick"};
+byte kickNotes[] = {36};
+KeyMap kick(1, 0, kickNames, kickNotes);
+String snareNames[] = {"Sn Rim", "Sn Open Hit", "Sn Rim (dbl)", "Sn Open Hit (dbl)", "Sn Shallow Rim", "Sn SideStick", "Sn Shallow Hit", "Sn Rim Click"};
+byte snareNotes[] = {37, 38, 39, 40, 41, 42, 43, 44};
+KeyMap snare(8, 1, snareNames, snareNotes);
+String tomNames[] = {"Tom 1 Rim", "Tom 1 Open", "Tom 2 Rim", "Tom 2 Open", "Tom 3 Rim", "Tom 3 Open", "Tom 4 Rim", "Tom 4 Open"};
+byte tomNotes[] = {72, 71, 70, 69, 68, 67, 66, 65};
+KeyMap tom1(8, 1, tomNames, tomNotes); 
+KeyMap tom2(8, 3, tomNames, tomNotes);
+String hatClNames[] = {"HH 1 Close Tip", "HH 1 Close Shaft", "HH 2 Close Tip", "HH 2 Close Shaft", "HH Close Bell"};
+byte hatClNotes[] = {49, 50, 51, 52, 53};
+KeyMap hatClosed(5, 0, hatClNames, hatClNotes);
+String hatOpNames[] = {"HH Open A", "HH Open B", "HH Open C", "HH Open D", "HH Open Bell"};
+byte hatOpNotes[] = {54, 55, 56, 57, 58};
+KeyMap hatOpen(5, 0, hatOpNames, hatOpNotes);
+String cymbalNames[] = {"Cymbal 1", "Cymbal 1 (dbl)", "Cymbal 2", "Cymbal 3", "Ride Tip", "Ride Bell", "Ride Shaft", "Xtra"};
+byte cymbalNotes[] = {77, 46, 79, 81, 60, 61, 62, 47};
+KeyMap cymbal(8, 0, cymbalNames, cymbalNotes);
+
+/* Create Drum Pads */
+DrumPad kickPed("Kick Pedal", 36, 0);
+DrumPad redPad("Red Pad", snare.getNote(), 1);
+DrumPad bluePad("Blue Pad", tom1.getNote(), 2);
+DrumPad greenPad("Green Pad", tom2.getNote(), 3);
+DrumPad yellowPad("Yellow Pad", hatOpen.getNote(), 4);
+DrumPad orangePad("Orange Pad", cymbal.getNote(), 5);
+DrumPad drumPads[] = {kickPed, redPad, bluePad, greenPad, yellowPad, orangePad};
+byte padCount = 6;
 
 /* Pedal Pins */
 int hatPedal = 6;               // Defines which pin hat pedal is connected to
@@ -91,7 +89,7 @@ byte enterPos = 3;
 void setup(){
   lcd.begin(16, 2);
   lcd.setCursor(0, 0);
-  lineWrite(SYS_NAME, "");
+  lineWrite(SYS_NAME, SYS_VERSION);
   Serial.begin(31250);
   pinMode(hatPedal, INPUT);
   pinMode(backButton, INPUT);
@@ -101,15 +99,23 @@ void setup(){
 void loop(){
   
   // Iterate through analog pads reading voltages and sending MIDI output    
-  for(int i = 0; i < PIN_COUNT; i++){
+  for(int i = 0; i < padCount; i++){
             
     // Check if pedal state has changed
     if(digitalRead(hatPedal) != pedalState){
-      if(pedalState == HIGH) MIDIoutput(PEDAL_ON, PEDAL_VELOCITY);
-      else MIDIoutput(PEDAL_OFF, PEDAL_VELOCITY);
+      if(pedalState == HIGH){ 
+        MIDIoutput(PEDAL_ON, PEDAL_VELOCITY);
+        drumPads[4].setNote(hatClosed.getNote());
+      }
+      else{ 
+        MIDIoutput(PEDAL_OFF, PEDAL_VELOCITY);
+        drumPads[4].setNote(hatOpen.getNote());
+      }
       pedalState = !pedalState;
     }
     
+
+    /*
     // Check if edit button has been pressed, if so go to the Edit Menu
     if(buttonPressed(editButton, editPos, false)){ 
       editMenu();
@@ -118,12 +124,16 @@ void loop(){
       lineWrite(SYS_NAME, "");
     }
     
-    if(analogRead(i) > 50){
+    */
+    DrumPad currentPad = drumPads[i];
+    byte currentPin = currentPad.getPin();
+
+    if(analogRead(currentPin) > 50){
       
       byte maxVal = 0;
   
       for(int read = 0; read < ANALOG_SAMPLES; read++){
-        byte val = analogRead(i);
+        byte val = analogRead(currentPin);
         if(val > maxVal) maxVal = val;
       }
       
@@ -131,17 +141,9 @@ void loop(){
       if(maxVal > MAX_STRIKE_VOLTAGE) maxVal = MAX_STRIKE_VOLTAGE;   
       byte velocity = (float) maxVal / MAX_STRIKE_VOLTAGE * 127; 
       if(velocity < MIN_VEL) velocity = MIN_VEL;  // Limit minimum velocity value to MIN_VEL (defined in class)*/
-
       
       // Output MIDI
-      int ccNote = 0;
-      if(i == 0) ccNote = kickNote[noteArrayPos[0]];
-      if(i == 1) ccNote = snareNote[noteArrayPos[1]];
-      if(i == 2) ccNote = getHat();
-      if(i == 3) ccNote = cymbalNote[noteArrayPos[5]];
-      if(i == 4) ccNote = tomNote[2];
-      if(i == 5) ccNote = tomNote[3];    
-      MIDIoutput(ccNote, velocity); 
+      MIDIoutput(currentPad.getNote(), velocity); 
     }
   }
   delay(DELAY);  
@@ -158,12 +160,6 @@ void MIDIoutput(int MIDInote, int MIDIvelocity){
   Serial.write(MIDIvelocity);   
 }
 
-/* Check if Hat should be open or closed and return the appropriate MIDI note */
-int getHat(){
-  if(pedalState == LOW) return HAT_CLOSED;
-  else return HAT_OPEN;
-}
-
 /* Clear a line of the LCD then write to it */
 void lineWrite(String message1, String message2){
   lcd.clear();
@@ -173,7 +169,7 @@ void lineWrite(String message1, String message2){
   lcd.print(message2);
 }
 
-/* Provides editing of MIDI notes sent by each pad and display to LCD */
+/* Provides editing of MIDI notes sent by each pad and display to LCD 
 void editMenu(){
   byte padNumber = 0;
   //lineWrite(padNames[padNumber], "");
@@ -257,6 +253,8 @@ void editMenu(){
     }  
   }
 }
+*/
+
 
 /* Checks if a button has been pressed */
 boolean buttonPressed(int button, byte statePos, boolean debounce){
